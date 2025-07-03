@@ -20,6 +20,7 @@ import redis.clients.jedis.annots.VisibleForTesting;
 import redis.clients.jedis.exceptions.*;
 import redis.clients.jedis.providers.ClusterConnectionProvider;
 import redis.clients.jedis.util.IOUtils;
+import redis.clients.jedis.util.JedisAsserts;
 
 public class ClusterCommandExecutor implements CommandExecutor {
 
@@ -34,6 +35,10 @@ public class ClusterCommandExecutor implements CommandExecutor {
 
   public ClusterCommandExecutor(ClusterConnectionProvider provider, int maxAttempts,
       Duration maxTotalRetriesDuration) {
+    JedisAsserts.notNull(provider, "provider must not be null");
+    JedisAsserts.isTrue(maxAttempts > 0, "maxAttempts must be greater than 0");
+    JedisAsserts.notNull(maxTotalRetriesDuration, "maxTotalRetriesDuration must not be null");
+
     this.provider = provider;
     this.maxAttempts = maxAttempts;
     this.maxTotalRetriesDuration = maxTotalRetriesDuration;
@@ -189,7 +194,9 @@ public class ClusterCommandExecutor implements CommandExecutor {
 
     JedisClusterOperationException maxAttemptsException
         = new JedisClusterOperationException("No more cluster attempts left.");
-    maxAttemptsException.addSuppressed(lastException);
+    if (lastException != null) {
+      maxAttemptsException.addSuppressed(lastException);
+    }
     throw maxAttemptsException;
   }
 
